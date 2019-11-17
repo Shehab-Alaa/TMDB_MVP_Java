@@ -2,13 +2,18 @@ package com.example.dell.themoviest.view;
 
 import android.content.Intent;
 import android.database.sqlite.SQLiteConstraintException;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,6 +27,7 @@ import com.example.dell.themoviest.helpers.ApiMovieTrailersHelper;
 import com.example.dell.themoviest.helpers.NotifyItemRemoved;
 import com.example.dell.themoviest.model.Category;
 import com.example.dell.themoviest.model.MovieDetails;
+import com.squareup.picasso.Callback;
 
 public class MovieInformation extends AppCompatActivity implements ApiMovieTrailersHelper {
 
@@ -45,6 +51,11 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
     private boolean clickedOnce;
     private Button openMovieTrailerBtn;
     private com.example.dell.themoviest.model.MovieTrailer movieTrailer;
+    private LinearLayout movieOverViewSection;
+    private ConstraintLayout movieDetailsSection;
+    private int rightAnimation;
+    private int bottomAnimation;
+    private ProgressBar movieCoverLoading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +77,20 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
         isExpanded = false;
         clickedOnce = false;
         openMovieTrailerBtn = findViewById(R.id.open_movie_trailer);
+        movieCoverLoading = findViewById(R.id.movie_cover_loading);
+
+        // Animations Section
+        movieDetailsSection = findViewById(R.id.movie_details_layout);
+        rightAnimation = R.anim.layout_animation_slide_right;
+        LayoutAnimationController rightAnimationController = AnimationUtils.loadLayoutAnimation(this, rightAnimation);
+        movieDetailsSection.setLayoutAnimation(rightAnimationController);
+
+        movieOverViewSection = findViewById(R.id.movie_overview_layout);
+        bottomAnimation = R.anim.layout_animation_from_bottom;
+        LayoutAnimationController bottomAnimationController = AnimationUtils.loadLayoutAnimation(this, bottomAnimation);
+        movieOverViewSection.setLayoutAnimation(bottomAnimationController);
+        
+        ////
 
         favorite = getIntent().getExtras().getBoolean("favorite");
         if (favorite) {
@@ -138,19 +163,31 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
         notifyItemRemoved = notifyItemRemovedInstance;
     }
 
-    private void initUI(MovieDetails movieDetails)
+    private void initUI(final MovieDetails movieDetails)
     {
+        movieCoverLoading.setVisibility(View.VISIBLE);
         // came from Database(Favorite) or from API Request
         PicassoCache
                 .getPicassoInstance(getApplicationContext())
                 .load(ApiClient.BACKDROP_BASE_URL + movieDetails.getBackdropPath())
-                .placeholder(R.drawable.movie_poster)
-                .into(backPoster);
+                //.placeholder(R.drawable.movie_poster)
+                .into(backPoster, new Callback() {
+                    @Override
+                    public void onSuccess() {
+                        movieCoverLoading.setVisibility(View.INVISIBLE);
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        movieCoverLoading.setVisibility(View.INVISIBLE);
+                        backPoster.setImageResource(R.drawable.movie_poster);
+                    }
+                });
 
         PicassoCache
                 .getPicassoInstance(getApplicationContext())
                 .load(ApiClient.POSTER_BASE_URL + movieDetails.getPosterPath())
-                .placeholder(R.drawable.movie_poster)
+                //.placeholder(R.drawable.movie_poster)
                 .into(moviePoster);
 
         collapsingToolbarLayout.setTitle(movieDetails.getTitle());

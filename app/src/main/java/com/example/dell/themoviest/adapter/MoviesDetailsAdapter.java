@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.dell.themoviest.R;
@@ -16,6 +17,7 @@ import com.example.dell.themoviest.client.ApiClient;
 import com.example.dell.themoviest.helpers.OnMovieListener;
 import com.example.dell.themoviest.model.Movie;
 import com.example.dell.themoviest.model.MovieDetails;
+import com.squareup.picasso.Callback;
 
 import java.util.ArrayList;
 
@@ -56,12 +58,14 @@ public class MoviesDetailsAdapter extends RecyclerView.Adapter<MoviesDetailsAdap
     {
         private ImageView moviePoster;
         private TextView movieTitle;
+        private ProgressBar loadingMoviePoster;
 
         public MoviesViewHolder(View itemView)  {
             super(itemView);
 
             moviePoster = itemView.findViewById(R.id.movie_poster);
             movieTitle = itemView.findViewById(R.id.movie_title);
+            loadingMoviePoster = itemView.findViewById(R.id.movie_poster_loading);
 
             itemView.setOnClickListener(this);
         }
@@ -71,17 +75,27 @@ public class MoviesDetailsAdapter extends RecyclerView.Adapter<MoviesDetailsAdap
             PicassoCache
                     .getPicassoInstance(context)
                     .load(ApiClient.POSTER_BASE_URL + movieDetails.getPosterPath())
-                    .placeholder(R.drawable.movie_poster)
-                    .into(moviePoster);
+                    //.placeholder(R.drawable.movie_poster)
+                    .into(moviePoster, new Callback() {
+                        public void onSuccess() {
+                            loadingMoviePoster.setVisibility(View.INVISIBLE);
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            loadingMoviePoster.setVisibility(View.INVISIBLE);
+                            moviePoster.setImageResource(R.drawable.movie_poster);
+                        }
+                    });
 
             movieTitle.setText(movieDetails.getTitle());
         }
 
         @Override
-        public void onClick(View v) {
+        public void onClick(View itemView) {
             // sent position to activity
             // activity is dealing with all thing not the adapter
-            onMovieListener.onItemClick(getAdapterPosition());
+            onMovieListener.onItemClick(itemView,getAdapterPosition());
         }
     }
 }

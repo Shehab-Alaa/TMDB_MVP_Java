@@ -3,12 +3,14 @@ package com.example.dell.themoviest.adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.dell.themoviest.client.ApiClient;
@@ -18,6 +20,7 @@ import com.example.dell.themoviest.view.MovieInformation;
 import com.example.dell.themoviest.R;
 import com.example.dell.themoviest.cache.PicassoCache;
 import com.example.dell.themoviest.model.Movie;
+import com.squareup.picasso.Callback;
 
 import java.util.ArrayList;
 
@@ -53,36 +56,54 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
         return movies.size();
     }
 
-    public class MoviesViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener
-    {
+    public class MoviesViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private ImageView moviePoster;
         private TextView movieTitle;
+        private ProgressBar loadingMoviePoster;
 
-        public MoviesViewHolder(View itemView)  {
+        public MoviesViewHolder(View itemView) {
             super(itemView);
 
             moviePoster = itemView.findViewById(R.id.movie_poster);
             movieTitle = itemView.findViewById(R.id.movie_title);
+            loadingMoviePoster = itemView.findViewById(R.id.movie_poster_loading);
 
             itemView.setOnClickListener(this);
         }
 
-        public void onBindMovie(Movie movie)
-        {
+        public void onBindMovie(Movie movie) {
+
+            loadingMoviePoster.setVisibility(View.VISIBLE);
+
             PicassoCache
                     .getPicassoInstance(context)
                     .load(ApiClient.POSTER_BASE_URL + movie.getPosterPath())
-                    .placeholder(R.drawable.movie_poster)
-                    .into(moviePoster);
+                    //.placeholder(R.drawable.movie_poster)
+                    .into(moviePoster, new Callback() {
+                        @Override
+                        public void onSuccess() {
+                            loadingMoviePoster.setVisibility(View.INVISIBLE);
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            loadingMoviePoster.setVisibility(View.INVISIBLE);
+                            moviePoster.setImageResource(R.drawable.movie_poster);
+                        }
+                    });
 
             movieTitle.setText(movie.getTitle());
         }
 
         @Override
-        public void onClick(View v) {
+        public void onClick(View itemView) {
+            // sent View to reach the children of the view that clicked;
             // sent position to activity
             // activity is dealing with all thing not the adapter
-            onMovieListener.onItemClick(getAdapterPosition());
+            onMovieListener.onItemClick(itemView, getAdapterPosition());
         }
+
     }
+
 }
+

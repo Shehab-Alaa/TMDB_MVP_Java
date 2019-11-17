@@ -3,6 +3,7 @@ package com.example.dell.themoviest.client;
 
 import android.content.Context;
 import android.util.Log;
+import android.view.View;
 
 import com.example.dell.themoviest.helpers.ApiMovieDetailsHelper;
 import com.example.dell.themoviest.helpers.ApiMovieTrailersHelper;
@@ -80,7 +81,7 @@ public class ApiPresenter implements IApiPresenter {
     }
 
     @Override
-    public void getMovieDetails(int movieID) {
+    public void getMovieDetails(final View itemView, int movieID) {
         final Call<MovieDetails> movieDetailsCall = ApiClient.getApiClient(context)
                 .create(ApiService.class).getMovieDetails(
                         movieID ,
@@ -91,9 +92,9 @@ public class ApiPresenter implements IApiPresenter {
             @Override
             public void onResponse(Call<MovieDetails> call, Response<MovieDetails> response) {
                 if (response.isSuccessful())
-                    movieDetailsHelper.setMovieDetailsData(response.body());
+                    movieDetailsHelper.setMovieDetailsData(itemView,response.body());
                 else
-                    movieDetailsHelper.setMovieDetailsData(null);
+                    movieDetailsHelper.setMovieDetailsData(itemView , null);
             }
 
             @Override

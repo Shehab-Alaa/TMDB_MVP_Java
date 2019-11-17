@@ -1,27 +1,32 @@
 package com.example.dell.themoviest.view;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.example.dell.themoviest.R;
-import com.example.dell.themoviest.adapter.MoviesDetailsAdapter;
-import com.example.dell.themoviest.helpers.ApiMovieDetailsHelper;
-import com.example.dell.themoviest.helpers.EndlessRecyclerViewScrollListener;
 import com.example.dell.themoviest.adapter.MoviesAdapter;
-import com.example.dell.themoviest.helpers.ApiMoviesHelper;
+import com.example.dell.themoviest.adapter.MoviesDetailsAdapter;
 import com.example.dell.themoviest.client.ApiPresenter;
 import com.example.dell.themoviest.database.MoviesDatabaseSingleton;
+import com.example.dell.themoviest.helpers.ApiMovieDetailsHelper;
+import com.example.dell.themoviest.helpers.ApiMoviesHelper;
+import com.example.dell.themoviest.helpers.EndlessRecyclerViewScrollListener;
 import com.example.dell.themoviest.helpers.GridSpacingItemDecoration;
 import com.example.dell.themoviest.helpers.NotifyItemRemoved;
 import com.example.dell.themoviest.helpers.OnMovieListener;
@@ -45,6 +50,7 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
     private GridLayoutManager gridLayoutManager;
     private boolean isFavorite;
     private ApiPresenter apiPresenter;
+    private boolean firstTimeAnimation;
 
     @Override
     public void onAttach(Context context) {
@@ -58,10 +64,20 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_movies , container , false);
 
+        firstTimeAnimation = true;
+
         category = getArguments().getString("category");
 
         moviesRV = view.findViewById(R.id.movies_rv);
-        initRecyclerView();
+
+        int orientation = this.getResources().getConfiguration().orientation;
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            // portrait mode
+            initRecyclerView(2 , 25);
+        } else {
+            // landscape mode
+            initRecyclerView(4 , 10);
+        }
 
         progressBar = view.findViewById(R.id.progress_bar);
         progressBar.setVisibility(View.VISIBLE);
@@ -120,14 +136,15 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
         apiPresenter.getMovies(category , page);
     }
 
-    private void initRecyclerView()
+    private void initRecyclerView(int spanCount , int spacing)
     {
-        gridLayoutManager = new GridLayoutManager(getActivity() , 2);
+        gridLayoutManager = new GridLayoutManager(getActivity() , spanCount);
         moviesRV.setLayoutManager(gridLayoutManager);
-        moviesRV.setItemAnimator(new DefaultItemAnimator());
+        // set Animation to all children (items) of this Layout
+        int animID = R.anim.layout_animation_fall_down;
+        LayoutAnimationController animation = AnimationUtils.loadLayoutAnimation(mContext, animID);
+        moviesRV.setLayoutAnimation(animation);
         // equal spaces between grid items
-        int spanCount = 2; // 2 columns
-        int spacing = 25; // 25px
         boolean includeEdge = true;
         moviesRV.addItemDecoration(new GridSpacingItemDecoration(spanCount, spacing, includeEdge));
     }
@@ -145,21 +162,22 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
     private void notifyMoviesAdapter()
     {
         progressBar.setVisibility(View.INVISIBLE);
-        if (moviesAdapter != null) {
-            moviesAdapter.notifyDataSetChanged();
-        }
-        else if(moviesDetailsAdapter != null){
-            moviesDetailsAdapter.notifyDataSetChanged();
-        }
+        if (moviesRV.getAdapter() != null)
+            moviesRV.getAdapter().notifyDataSetChanged();
         else{
             Toast.makeText(mContext, "something went wrong !!", Toast.LENGTH_SHORT).show();
         }
+        if (firstTimeAnimation){
+            moviesRV.scheduleLayoutAnimation();
+            firstTimeAnimation = false;
+        }
+
     }
 
     @Override
-    public void onItemClick(int moviePosition) {
-        Intent intent = new Intent(mContext , MovieInformation.class);
+    public void onItemClick(View itemView,int moviePosition) {
         if(isFavorite) {
+            Intent intent = new Intent(mContext , MovieInformation.class);
             intent.putExtra("selectedMovie", moviesDetails.get(moviePosition));
             // to use position to notify the adapter if the movie is removed from favorite
             intent.putExtra("moviePosition" , moviePosition);
@@ -169,18 +187,24 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
             MovieInformation.setNotifyItemRemovedInstance(this);
         }else{
             // i want to request a Movie Details from here before going to MovieInfoActivity
-            apiPresenter.getMovieDetails(movies.get(moviePosition).getId());
+            // itemView holds view in which item is clicked
+            apiPresenter.getMovieDetails(itemView,movies.get(moviePosition).getId());
         }
     }
 
     @Override
-    public void setMovieDetailsData(MovieDetails movieDetails) {
+    public void setMovieDetailsData(View itemView,MovieDetails movieDetails) {
         // sent requested movie details to movie information-
         if (movieDetails != null) {
             Intent intent = new Intent(mContext, MovieInformation.class);
             intent.putExtra("selectedMovie", movieDetails);
             intent.putExtra("favorite", isFavorite);
-            startActivity(intent);
+            // need to share MoviePoster between this Activity And MovieInformation
+            ActivityOptionsCompat options = ActivityOptionsCompat.
+                    makeSceneTransitionAnimation(this.getActivity(),
+                            itemView.findViewById(R.id.movie_poster),
+                            ViewCompat.getTransitionName(itemView.findViewById(R.id.movie_poster)));
+            startActivity(intent , options.toBundle());
         }else
             Toast.makeText(mContext, "please check your internet connection", Toast.LENGTH_SHORT).show();
     }

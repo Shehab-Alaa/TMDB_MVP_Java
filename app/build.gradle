@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.example.dell.themoviest"
-        minSdkVersion 15
+        minSdkVersion 21
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -44,6 +44,5 @@ dependencies {
     //picasso
     implementation 'com.squareup.picasso:picasso:2.71828'
     implementation files('libs/YouTubeAndroidPlayerApi.jar')
-
 
 }
