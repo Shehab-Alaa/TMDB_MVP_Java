@@ -27,31 +27,21 @@ public class ApiPresenter implements IApiPresenter {
     private ApiMovieTrailersHelper movieTrailersHelper;
     private Context context;
 
-    public ApiPresenter(ApiMoviesHelper moviesHelper , Context context)
+    public ApiPresenter(Context context)
     {
-        this.moviesHelper = moviesHelper;
         this.context = context;
     }
 
-    public ApiPresenter(ApiMovieDetailsHelper movieDetailsHelper ,Context context)
-    {
-        // presenter pridge to reach views throw interface
+    public void setMovieDetailsHelper(ApiMovieDetailsHelper movieDetailsHelper) {
         this.movieDetailsHelper = movieDetailsHelper;
-        this.context = context;
     }
 
-    public ApiPresenter(ApiMoviesHelper moviesHelper, ApiMovieDetailsHelper movieDetailsHelper ,Context context)
-    {
+    public void setMoviesHelper(ApiMoviesHelper moviesHelper) {
         this.moviesHelper = moviesHelper;
-        this.movieDetailsHelper = movieDetailsHelper;
-        this.context = context;
     }
 
-
-    public ApiPresenter(ApiMovieTrailersHelper movieTrailersHelper , Context context)
-    {
+    public void setMovieTrailersHelper(ApiMovieTrailersHelper movieTrailersHelper) {
         this.movieTrailersHelper = movieTrailersHelper;
-        this.context = context;
     }
 
     @Override
@@ -81,7 +71,7 @@ public class ApiPresenter implements IApiPresenter {
     }
 
     @Override
-    public void getMovieDetails(final View itemView, int movieID) {
+    public void getMovieDetails(int movieID) {
         final Call<MovieDetails> movieDetailsCall = ApiClient.getApiClient(context)
                 .create(ApiService.class).getMovieDetails(
                         movieID ,
@@ -92,9 +82,9 @@ public class ApiPresenter implements IApiPresenter {
             @Override
             public void onResponse(Call<MovieDetails> call, Response<MovieDetails> response) {
                 if (response.isSuccessful())
-                    movieDetailsHelper.setMovieDetailsData(itemView,response.body());
+                    movieDetailsHelper.setMovieDetailsData(response.body());
                 else
-                    movieDetailsHelper.setMovieDetailsData(itemView , null);
+                    movieDetailsHelper.setMovieDetailsData(null);
             }
 
             @Override

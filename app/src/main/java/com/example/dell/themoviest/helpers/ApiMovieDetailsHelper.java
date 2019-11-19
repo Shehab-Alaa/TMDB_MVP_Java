@@ -5,5 +5,5 @@ import android.view.View;
 import com.example.dell.themoviest.model.MovieDetails;
 
 public interface ApiMovieDetailsHelper {
-    void setMovieDetailsData(View itemView, MovieDetails movieDetails);
+    void setMovieDetailsData(MovieDetails movieDetails);
 }

@@ -23,15 +23,18 @@ import com.example.dell.themoviest.cache.PicassoCache;
 import com.example.dell.themoviest.client.ApiClient;
 import com.example.dell.themoviest.client.ApiPresenter;
 import com.example.dell.themoviest.database.MoviesDatabaseSingleton;
+import com.example.dell.themoviest.helpers.ApiMovieDetailsHelper;
 import com.example.dell.themoviest.helpers.ApiMovieTrailersHelper;
 import com.example.dell.themoviest.helpers.NotifyItemRemoved;
 import com.example.dell.themoviest.model.Category;
+import com.example.dell.themoviest.model.Movie;
 import com.example.dell.themoviest.model.MovieDetails;
 import com.squareup.picasso.Callback;
 
-public class MovieInformation extends AppCompatActivity implements ApiMovieTrailersHelper {
+public class MovieInformation extends AppCompatActivity implements ApiMovieTrailersHelper , ApiMovieDetailsHelper {
 
     private MovieDetails selectedMovieDetails;
+    private Movie selectedMovie;
     private boolean favorite;
 
     private ImageView backPoster;
@@ -56,6 +59,10 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
     private int rightAnimation;
     private int bottomAnimation;
     private ProgressBar movieCoverLoading;
+    private TextView isAdultMovie;
+    private TextView movieBudget;
+    private TextView movieRunTime;
+    private ApiPresenter apiPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +85,9 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
         clickedOnce = false;
         openMovieTrailerBtn = findViewById(R.id.open_movie_trailer);
         movieCoverLoading = findViewById(R.id.movie_cover_loading);
+        isAdultMovie = findViewById(R.id.movie_adult);
+        movieBudget = findViewById(R.id.movie_budget);
+        movieRunTime = findViewById(R.id.movie_run_time);
 
         // Animations Section
         movieDetailsSection = findViewById(R.id.movie_details_layout);
@@ -101,12 +111,17 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
             openMovieTrailerBtn.setVisibility(View.INVISIBLE);
         }
         else {
-            selectedMovieDetails = (MovieDetails) getIntent().getSerializableExtra("selectedMovie");
-            initUI(selectedMovieDetails);
+            selectedMovie = (Movie) getIntent().getSerializableExtra("selectedMovie");
+            initKnownUI(selectedMovie);
             fabFavorite.setImageResource(R.drawable.ic_un_favorite);
+
+            apiPresenter = new ApiPresenter(getApplicationContext());
+            apiPresenter.setMovieDetailsHelper(this);
+            apiPresenter.setMovieTrailersHelper(this);
+            // request for rest of Data;
+            apiPresenter.getMovieDetails(selectedMovie.getId());
             // make movie Trailer Request;
-            ApiPresenter apiPresenter = new ApiPresenter(this , getApplicationContext());
-            apiPresenter.getMovieVideos(selectedMovieDetails.getId());
+            apiPresenter.getMovieVideos(selectedMovie.getId());
         }
 
 
@@ -158,18 +173,12 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
 
     }
 
-    public static void setNotifyItemRemovedInstance(NotifyItemRemoved notifyItemRemovedInstance)
-    {
-        notifyItemRemoved = notifyItemRemovedInstance;
-    }
-
-    private void initUI(final MovieDetails movieDetails)
-    {
+    private void initKnownUI(Movie selectedMovie) {
         movieCoverLoading.setVisibility(View.VISIBLE);
-        // came from Database(Favorite) or from API Request
+        // Movie Cover Poster
         PicassoCache
                 .getPicassoInstance(getApplicationContext())
-                .load(ApiClient.BACKDROP_BASE_URL + movieDetails.getBackdropPath())
+                .load(ApiClient.BACKDROP_BASE_URL + selectedMovie.getBackdropPath())
                 //.placeholder(R.drawable.movie_poster)
                 .into(backPoster, new Callback() {
                     @Override
@@ -183,37 +192,24 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
                         backPoster.setImageResource(R.drawable.movie_poster);
                     }
                 });
-
+        // Shard Element Movie Poster
         PicassoCache
                 .getPicassoInstance(getApplicationContext())
-                .load(ApiClient.POSTER_BASE_URL + movieDetails.getPosterPath())
+                .load(ApiClient.POSTER_BASE_URL + selectedMovie.getPosterPath())
                 //.placeholder(R.drawable.movie_poster)
                 .into(moviePoster);
 
-        collapsingToolbarLayout.setTitle(movieDetails.getTitle());
-
-        movieTitle.setText(movieDetails.getTitle());
-
-        String categoriesHolder = "";
-        for (Category category : movieDetails.getCategories())
-            categoriesHolder += category.getName() + ". ";
-        movieCategories.setText(categoriesHolder);
-
-        if (movieDetails.getStatus().equals("Released")){
-            movieStatusImage.setImageDrawable(getResources().getDrawable(R.drawable.ic_released));
-            movieStatus.setText("Released");
-        }else{
-            movieStatusImage.setImageDrawable(getResources().getDrawable(R.drawable.ic_un_released));
-            movieStatus.setText(movieDetails.getStatus());
-        }
-
-        float rating = (float) (( movieDetails.getVoteAverage() * 5 ) / 9);
+        // Movie Title
+        collapsingToolbarLayout.setTitle(selectedMovie.getTitle());
+        movieTitle.setText(selectedMovie.getTitle());
+        // Movie Average Rate
+        float rating = (float) (( selectedMovie.getVoteAverage() * 5 ) / 9);
         movieRate.setNumStars(5);
         movieRate.setStepSize(0.1f);
         movieRate.setRating(rating);
         movieRate.setIsIndicator(true);
-
-        final String movieOverviewHolder = movieDetails.getOverview();
+        // Movie Overview
+        final String movieOverviewHolder = selectedMovie.getOverview();
         final int MAX_CHARS = 100;
         if (movieOverviewHolder.length() >= MAX_CHARS) {
             // will show first 100 and show the rest when expanded
@@ -237,7 +233,64 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
             movieOverview.setText(movieOverviewHolder);
             expandCollapseBtn.setVisibility(View.INVISIBLE);
         }
+    }
 
+    private void initRestUI(MovieDetails selectedMovieDetails){
+
+        if (selectedMovieDetails == null)
+        {
+            Toast.makeText(this, "Please Check Internet Connection", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Movie Categories
+        String categoriesHolder = "";
+        for (Category category : selectedMovieDetails.getCategories())
+            categoriesHolder += category.getName() + ". ";
+        movieCategories.setText(categoriesHolder);
+        // Movie Status
+        if (selectedMovieDetails.getStatus().equals("Released")){
+            movieStatusImage.setImageDrawable(getResources().getDrawable(R.drawable.ic_released));
+            movieStatus.setText("Released");
+        }else{
+            movieStatusImage.setImageDrawable(getResources().getDrawable(R.drawable.ic_un_released));
+            movieStatus.setText(selectedMovieDetails.getStatus());
+        }
+        // Movie Budget && Is For Adult && RunTime
+         movieBudget.setText(selectedMovieDetails.getBudget().toString());
+         movieRunTime.setText(selectedMovieDetails.getRuntime().toString());
+         if (selectedMovieDetails.getAdult())
+             isAdultMovie.setText("Yes");
+         else
+             isAdultMovie.setText("No");
+        // TODO: Movie Reviews
+        // TODO: See theMDB another requests for better UX => Trailers || Related Movies
+    }
+
+    @Override
+    public void setMovieDetailsData(MovieDetails movieDetails) {
+        selectedMovieDetails = movieDetails;
+        initRestUI(movieDetails);
+    }
+
+    public static void setNotifyItemRemovedInstance(NotifyItemRemoved notifyItemRemovedInstance)
+    {
+        notifyItemRemoved = notifyItemRemovedInstance;
+    }
+
+    private void initUI(final MovieDetails movieDetails)
+    {
+        // initUI from an object came from Database (Favorite)
+        // i will use the 2 upper methods to set the Views Data
+        Movie movieHolder = new Movie();
+        movieHolder.setBackdropPath(movieDetails.getBackdropPath());
+        movieHolder.setPosterPath(movieDetails.getPosterPath());
+        movieHolder.setTitle(movieDetails.getTitle());
+        movieHolder.setVoteAverage(movieDetails.getVoteAverage());
+        movieHolder.setOverview(movieDetails.getOverview());
+
+        initKnownUI(movieHolder);
+        initRestUI(movieDetails);
     }
 
     @Override
@@ -261,4 +314,6 @@ public class MovieInformation extends AppCompatActivity implements ApiMovieTrail
             }
         });
     }
+
+
 }

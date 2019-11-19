@@ -36,7 +36,7 @@ import com.example.dell.themoviest.model.MovieDetails;
 import java.util.ArrayList;
 
 public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovieListener
-        , ApiMovieDetailsHelper , NotifyItemRemoved {
+         , NotifyItemRemoved {
 
     private Context mContext;
     private String category;
@@ -102,7 +102,8 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
             isFavorite = false;
 
             // pass an Application Context not activity Context to avoid tied lifecycles and activity cannot be garbage collected
-            apiPresenter = new ApiPresenter( this , this, mContext.getApplicationContext());
+            apiPresenter = new ApiPresenter(mContext.getApplicationContext());
+            apiPresenter.setMoviesHelper(this);
 
             movies = new ArrayList<>();
             moviesAdapter = new MoviesAdapter(mContext , movies , this);
@@ -186,18 +187,13 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
             // i want to sent this instance to an activity i use a static method (until now)
             MovieInformation.setNotifyItemRemovedInstance(this);
         }else{
-            // i want to request a Movie Details from here before going to MovieInfoActivity
+            // i want to request a Movie Details from here before going to MovieInfoActivity == (BAD UX)
             // itemView holds view in which item is clicked
-            apiPresenter.getMovieDetails(itemView,movies.get(moviePosition).getId());
-        }
-    }
+            // i will send object to another activity and set known Views until i request the rest of MovieDetails
+           // apiPresenter.getMovieDetails(itemView,movies.get(moviePosition).getId()); (BAD UX)
 
-    @Override
-    public void setMovieDetailsData(View itemView,MovieDetails movieDetails) {
-        // sent requested movie details to movie information-
-        if (movieDetails != null) {
-            Intent intent = new Intent(mContext, MovieInformation.class);
-            intent.putExtra("selectedMovie", movieDetails);
+            Intent intent = new Intent(mContext , MovieInformation.class);
+            intent.putExtra("selectedMovie" , movies.get(moviePosition));
             intent.putExtra("favorite", isFavorite);
             // need to share MoviePoster between this Activity And MovieInformation
             ActivityOptionsCompat options = ActivityOptionsCompat.
@@ -205,8 +201,7 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
                             itemView.findViewById(R.id.movie_poster),
                             ViewCompat.getTransitionName(itemView.findViewById(R.id.movie_poster)));
             startActivity(intent , options.toBundle());
-        }else
-            Toast.makeText(mContext, "please check your internet connection", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

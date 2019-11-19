@@ -44,5 +44,6 @@ dependencies {
     //picasso
     implementation 'com.squareup.picasso:picasso:2.71828'
     implementation files('libs/YouTubeAndroidPlayerApi.jar')
-
+    // dots loader
+    implementation 'com.steelkiwi:dots-loader-view:1.0.0'
 }
