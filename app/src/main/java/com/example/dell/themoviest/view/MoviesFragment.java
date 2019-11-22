@@ -11,6 +11,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -154,6 +155,12 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
     public void setMoviesData(ArrayList<Movie> movies) {
         if (movies != null) {
             // update data without using = or new to affect adapter data;
+            Log.i("MovieID " , movies.get(0).getId().toString());
+            Log.i("MovieID " , movies.get(1).getId().toString());
+            Log.i("MovieID " , movies.get(2).getId().toString());
+            Log.i("MovieID " , movies.get(3).getId().toString());
+            Log.i("MovieID " , movies.get(4).getId().toString());
+            Log.i("MovieID " , movies.get(5).getId().toString());
             this.movies.addAll(movies);
             notifyMoviesAdapter();
         }else
@@ -176,16 +183,23 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
     }
 
     @Override
-    public void onItemClick(View itemView,int moviePosition) {
+    public void onMovieClick(View itemView, int moviePosition) {
         if(isFavorite) {
             Intent intent = new Intent(mContext , MovieInformation.class);
             intent.putExtra("selectedMovie", moviesDetails.get(moviePosition));
             // to use position to notify the adapter if the movie is removed from favorite
             intent.putExtra("moviePosition" , moviePosition);
             intent.putExtra("favorite" , isFavorite);
-            startActivity(intent);
             // i want to sent this instance to an activity i use a static method (until now)
             MovieInformation.setNotifyItemRemovedInstance(this);
+            // set dynamic transition name by MovieID
+            itemView.findViewById(R.id.movie_poster).setTransitionName(moviesDetails.get(moviePosition).getId().toString());
+            // need to share MoviePoster between this Activity And MovieInformation
+            ActivityOptionsCompat options = ActivityOptionsCompat.
+                    makeSceneTransitionAnimation(this.getActivity(),
+                            itemView.findViewById(R.id.movie_poster),
+                            ViewCompat.getTransitionName(itemView.findViewById(R.id.movie_poster)));
+            startActivity(intent , options.toBundle());
         }else{
             // i want to request a Movie Details from here before going to MovieInfoActivity == (BAD UX)
             // itemView holds view in which item is clicked
@@ -195,6 +209,8 @@ public class MoviesFragment extends Fragment implements ApiMoviesHelper , OnMovi
             Intent intent = new Intent(mContext , MovieInformation.class);
             intent.putExtra("selectedMovie" , movies.get(moviePosition));
             intent.putExtra("favorite", isFavorite);
+            // set dynamic transition name by MovieID
+            itemView.findViewById(R.id.movie_poster).setTransitionName(movies.get(moviePosition).getId().toString());
             // need to share MoviePoster between this Activity And MovieInformation
             ActivityOptionsCompat options = ActivityOptionsCompat.
                     makeSceneTransitionAnimation(this.getActivity(),

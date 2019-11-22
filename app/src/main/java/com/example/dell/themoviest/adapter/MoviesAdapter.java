@@ -2,9 +2,6 @@ package com.example.dell.themoviest.adapter;
 
 
 import android.content.Context;
-import android.content.Intent;
-import android.os.AsyncTask;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,8 +12,6 @@ import android.widget.TextView;
 
 import com.example.dell.themoviest.client.ApiClient;
 import com.example.dell.themoviest.helpers.OnMovieListener;
-import com.example.dell.themoviest.model.MovieDetails;
-import com.example.dell.themoviest.view.MovieInformation;
 import com.example.dell.themoviest.R;
 import com.example.dell.themoviest.cache.PicassoCache;
 import com.example.dell.themoviest.model.Movie;
@@ -100,7 +95,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
             // sent View to reach the children of the view that clicked;
             // sent position to activity
             // activity is dealing with all thing not the adapter
-            onMovieListener.onItemClick(itemView, getAdapterPosition());
+            onMovieListener.onMovieClick(itemView, getAdapterPosition());
         }
 
     }

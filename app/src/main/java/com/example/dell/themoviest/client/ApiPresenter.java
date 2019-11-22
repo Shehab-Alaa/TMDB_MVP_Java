@@ -3,14 +3,16 @@ package com.example.dell.themoviest.client;
 
 import android.content.Context;
 import android.util.Log;
-import android.view.View;
 
 import com.example.dell.themoviest.helpers.ApiMovieDetailsHelper;
+import com.example.dell.themoviest.helpers.ApiMovieReviewsHelper;
 import com.example.dell.themoviest.helpers.ApiMovieTrailersHelper;
 import com.example.dell.themoviest.helpers.ApiMoviesHelper;
 import com.example.dell.themoviest.model.DataResponse;
 import com.example.dell.themoviest.model.Movie;
 import com.example.dell.themoviest.model.MovieDetails;
+import com.example.dell.themoviest.model.MovieReview;
+import com.example.dell.themoviest.model.MovieReviewResponse;
 import com.example.dell.themoviest.model.MovieTrailer;
 import com.example.dell.themoviest.model.MovieVideosResponse;
 
@@ -25,6 +27,7 @@ public class ApiPresenter implements IApiPresenter {
     private ApiMovieDetailsHelper movieDetailsHelper;
     private ApiMoviesHelper moviesHelper;
     private ApiMovieTrailersHelper movieTrailersHelper;
+    private ApiMovieReviewsHelper movieReviewsHelper;
     private Context context;
 
     public ApiPresenter(Context context)
@@ -42,6 +45,10 @@ public class ApiPresenter implements IApiPresenter {
 
     public void setMovieTrailersHelper(ApiMovieTrailersHelper movieTrailersHelper) {
         this.movieTrailersHelper = movieTrailersHelper;
+    }
+
+    public void setMovieReviewsHelper(ApiMovieReviewsHelper movieReviewsHelper) {
+        this.movieReviewsHelper = movieReviewsHelper;
     }
 
     @Override
@@ -68,6 +75,59 @@ public class ApiPresenter implements IApiPresenter {
                 Log.e("error message > " , t.getMessage());
             }
         });
+    }
+
+    @Override
+    public void getSimilarMovies(int movieID, int page) {
+        final Call<DataResponse> moviesCall = ApiClient.getApiClient(context)
+                .create(ApiService.class).getSimilarMovies(
+                        movieID ,
+                        ApiClient.API_KEY ,
+                        ApiClient.LANGUAGE ,
+                        page);
+
+        moviesCall.enqueue(new Callback<DataResponse>() {
+            @Override
+            public void onResponse(Call<DataResponse> call, Response<DataResponse> response) {
+                if (response.isSuccessful())
+                    moviesHelper.setMoviesData((ArrayList<Movie>) response.body().getMovies());
+                else
+                    moviesHelper.setMoviesData(null);
+            }
+
+            @Override
+            public void onFailure(Call<DataResponse> call, Throwable t) {
+                Log.e("API Service Presenter >"  , " error in getting data from API");
+                Log.e("error message > " , t.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void getMovieReviews(int movieID , int page){
+        final Call<MovieReviewResponse> movieReviewResponseCall = ApiClient.getApiClient(context)
+                .create(ApiService.class).getMovieReviews(
+                        movieID ,
+                        ApiClient.API_KEY ,
+                        ApiClient.LANGUAGE ,
+                        page);
+
+        movieReviewResponseCall.enqueue(new Callback<MovieReviewResponse>() {
+            @Override
+            public void onResponse(Call<MovieReviewResponse> call, Response<MovieReviewResponse> response) {
+                if (response.isSuccessful())
+                    movieReviewsHelper.setMovieReviewsData((ArrayList<MovieReview>) response.body().getMovieReviews() , response.body().getTotalPages());
+                else
+                    movieReviewsHelper.setMovieReviewsData(null , 0);
+            }
+
+            @Override
+            public void onFailure(Call<MovieReviewResponse> call, Throwable t) {
+                Log.e("API Service Presenter >"  , " error in getting data from API");
+                Log.e("error message > " , t.getMessage());
+            }
+        });
+
     }
 
     @Override
@@ -108,9 +168,9 @@ public class ApiPresenter implements IApiPresenter {
             public void onResponse(Call<MovieVideosResponse> call, Response<MovieVideosResponse> response) {
                 if (response.isSuccessful()){
                     if (response.body().getMovieTrailers().size() > 0)
-                        movieTrailersHelper.setMovieTrailer(response.body().getMovieTrailers().get(0)); // sent first official trailer
+                        movieTrailersHelper.setMovieTrailers((ArrayList<MovieTrailer>) response.body().getMovieTrailers());
                 }else{
-                    movieTrailersHelper.setMovieTrailer(null);
+                    movieTrailersHelper.setMovieTrailers(null);
                 }
             }
 
@@ -121,4 +181,5 @@ public class ApiPresenter implements IApiPresenter {
             }
         });
     }
+
 }

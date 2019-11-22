@@ -22,7 +22,8 @@
         <activity android:name=".view.MovieInformation" />
         <activity
             android:name=".view.MovieTrailerActivity"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/AppTheme.CustomTheme2"/>
         <activity android:name=".view.SplashScreen">
 
         </activity>
